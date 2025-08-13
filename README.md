@@ -13,9 +13,6 @@ Generate Software Test Documents (STD) automatically from testing videos. Upload
 * [Tech Stack](#tech-stack)
 * [Dynamic Test Case Columns](#dynamic-test-case-columns)
 * [Privacy & Data](#privacy--data)
-* [Roadmap](#roadmap)
-* [Contributing](#contributing)
-* [License](#license)
 
 ---
 
@@ -67,24 +64,4 @@ Templates define the columns in your test table (for example: Title, Preconditio
 * Premium: unlimited history and folders.
 * Admin can block users and see usage analytics. Marketing requires explicit consent (opt‑in) and respects suppression lists.
 
----
 
-## Roadmap
-
-* Duplicate step detection and merging
-* Rich severity and priority model with explainability
-* Multi-language ASR and UI
-* One-click export to Jira or CSV
-* Chrome extension recorder (rrweb, console, screenshots)
-
----
-
-## Contributing
-
-Pull requests are welcome. Please open an issue first to discuss changes or feature requests.
-
----
-
-## License
-
-MIT. Add a `LICENSE` file to finalize.
