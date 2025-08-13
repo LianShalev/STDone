@@ -12,8 +12,6 @@ Generate Software Test Documents (STD) automatically from testing videos. Upload
 * [How It Works](#how-it-works)
 * [Tech Stack](#tech-stack)
 * [Quickstart](#quickstart)
-* [API](#api)
-* [Templates](#templates)
 * [Dynamic Test Case Columns](#dynamic-test-case-columns)
 * [Privacy & Data](#privacy--data)
 * [Roadmap](#roadmap)
