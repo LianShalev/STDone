@@ -1,0 +1,252 @@
+Project STDone {
+  database_type: "MySQL"
+}
+
+Table users {
+  id            int [pk, increment]
+  email         varchar(190) [unique]
+  password_h    varchar(255)
+  full_name     varchar(120)
+  role          enum('admin','user') [default: 'user']
+  status        enum('active','banned') [default: 'active']
+  created_at    datetime
+  last_login_at datetime
+}
+
+Table profiles {
+  user_id          int [pk, ref: > users.id]
+  plan             enum('free','premium') [default: 'free']
+  plan_expires_at  datetime
+  tests_per_day    int [note: 'free=3, premium=null (=unlimited)']
+  history_limit    int [note: 'free=10, premium=null (=unlimited)']
+  settings_json    json
+}
+
+Table sessions {
+  id            char(36) [pk, note: 'UUID']
+  user_id       int [ref: > users.id, note: 'NULL = guest']
+  is_guest      boolean [default: true]
+  ip_hash       char(64)
+  user_agent    varchar(255)
+  created_at    datetime
+  last_seen_at  datetime
+}
+
+Table usage_counters {
+  id          int [pk, increment]
+  day         date
+  user_id     int [ref: > users.id]
+  session_id  char(36) [ref: > sessions.id]
+  tests_used  int [default: 0]
+  indexes {
+    (day, user_id) [unique]
+    (day, session_id) [unique]
+  }
+}
+
+Table plans {
+  id        int [pk, increment]
+  code      varchar(40) [unique, note: 'free, premium']
+  name      varchar(80)
+  price_usd decimal(10,2)
+  features_json json
+}
+
+Table subscriptions {
+  id          int [pk, increment]
+  user_id     int [ref: > users.id]
+  plan_id     int [ref: > plans.id]
+  status      enum('active','canceled','expired','past_due')
+  started_at  datetime
+  expires_at  datetime
+  canceled_at datetime
+  provider    enum('paypal')
+  provider_agreement_id varchar(128)
+}
+
+Table payments {
+  id          int [pk, increment]
+  user_id     int [ref: > users.id]
+  plan_id     int [ref: > plans.id]
+  provider    enum('paypal')
+  amount_usd  decimal(10,2)
+  currency    char(3)
+  status      enum('succeeded','failed','pending')
+  provider_txn_id varchar(128)
+  created_at  datetime
+}
+
+Table folders {
+  id         int [pk, increment]
+  user_id    int [ref: > users.id]
+  name       varchar(120)
+  created_at datetime
+}
+
+Table std_templates {
+  id          int [pk, increment]
+  user_id     int [ref: > users.id, note: 'NULL=system template']
+  name        varchar(120)
+  description text
+  is_default  boolean [default: false]
+  version     int [default: 1]
+  created_at  datetime
+}
+
+Table template_fields {
+  id           int [pk, increment]
+  template_id  int [ref: > std_templates.id]
+  name         varchar(120)
+  key          varchar(120) [note: 'slug, unique per template']
+  type         enum('text','longtext','number','bool','date','time','select','multiselect','url','json')
+  required     boolean [default: false]
+  order_index  int
+  default_val  text
+  options_json json
+  ai_hint      text [note: 'עזרה ל-AI איך למלא שדה זה (מילים נרדפות, דוגמאות)']
+}
+
+Table analysis_sessions {
+  id             int [pk, increment]
+  session_id     char(36) [ref: > sessions.id]
+  user_id        int [ref: > users.id]
+  status         enum('uploaded','processing','done','error')
+  video_url      varchar(255)
+  rrweb_url      varchar(255)
+  har_url        varchar(255)
+  transcript_url varchar(255)
+  duration_sec   int
+  error_message  text
+  created_at     datetime
+  completed_at   datetime
+}
+
+Table std_documents {
+  id            int [pk, increment]
+  owner_user_id int [ref: > users.id]
+  session_id    char(36) [ref: > sessions.id]
+  template_id   int [ref: > std_templates.id]
+  folder_id     int [ref: > folders.id]
+  title         varchar(160)
+  project_name  varchar(160)
+  status        enum('draft','final') [default: 'final']
+  generated_at  datetime
+  purge_at      datetime [note: 'למחיקה אוטומטית לאחר 30 יום ללא מנוי']
+  markdown_url  varchar(255)
+  pdf_url       varchar(255)
+  docx_url      varchar(255)
+  metadata_json json [note: 'scope, risks, environments, acceptance']
+}
+
+Table test_case_rows {
+  id           int [pk, increment]
+  document_id  int [ref: > std_documents.id]
+  row_index    int
+}
+
+Table test_case_values {
+  id           int [pk, increment]
+  row_id       int [ref: > test_case_rows.id]
+  field_id     int [ref: > template_fields.id]
+  value_text   longtext
+  value_num    decimal(18,6)
+  value_json   json
+}
+
+Table events {
+  id          bigint [pk, increment]
+  session_id  char(36) [ref: > sessions.id]
+  user_id     int [ref: > users.id]
+  type        enum('visit','login','signup','upload','generate','payment','error')
+  payload_json json
+  occurred_at datetime
+}
+
+Table ban_logs {
+  id          int [pk, increment]
+  user_id     int [ref: > users.id]
+  by_admin_id int [ref: > users.id]
+  reason      text
+  created_at  datetime
+}
+
+// ============================
+// Marketing & Consent Extension
+// ============================
+
+Table contact_preferences {
+  user_id       int [pk, ref: > users.id]
+  email_marketing_consent boolean [default: false]
+  sms_marketing_consent   boolean [default: false]
+  preferred_channel       enum('email','sms','none') [default: 'email']
+  consent_ts    datetime
+  consent_source varchar(160) [note: 'e.g., signup checkbox, settings page']
+  policy_version varchar(20)
+  revoked_ts    datetime
+}
+
+Table consents_history {
+  id             int [pk, increment]
+  user_id        int [ref: > users.id]
+  channel        enum('email','sms')
+  action         enum('consented','revoked','updated')
+  policy_version varchar(20)
+  source         varchar(160)
+  ip_hash        char(64)
+  user_agent     varchar(255)
+  occurred_at    datetime
+}
+
+Table marketing_suppression_list {
+  id         int [pk, increment]
+  contact    varchar(190) [unique, note: 'email or phone in normalized form']
+  reason     enum('unsubscribed','bounced','complaint','blocked','manual')
+  provider   varchar(60)
+  created_at datetime
+}
+
+Table marketing_campaigns {
+  id         int [pk, increment]
+  name       varchar(160)
+  channel    enum('email','sms') [default: 'email']
+  status     enum('draft','scheduled','sending','paused','completed') [default: 'draft']
+  subject    varchar(190)
+  body_html  longtext
+  body_text  longtext
+  from_name  varchar(120)
+  from_email varchar(190)
+  send_at    datetime
+  created_by int [ref: > users.id]
+  created_at datetime
+}
+
+Table marketing_segments {
+  id              int [pk, increment]
+  name            varchar(160)
+  definition_json json [note: 'rules for selecting recipients']
+  created_by      int [ref: > users.id]
+  created_at      datetime
+}
+
+Table marketing_recipients {
+  id           int [pk, increment]
+  campaign_id  int [ref: > marketing_campaigns.id]
+  user_id      int [ref: > users.id]
+  email        varchar(190)
+  status       enum('queued','skipped','sent','failed','suppressed') [default: 'queued']
+  reason       text
+  sent_at      datetime
+  indexes {
+    (campaign_id, user_id) [unique]
+  }
+}
+
+Table marketing_events {
+  id           int [pk, increment]
+  campaign_id  int [ref: > marketing_campaigns.id]
+  recipient_id int [ref: > marketing_recipients.id]
+  user_id      int [ref: > users.id]
+  type         enum('delivered','open','click','bounce','complaint','unsubscribe')
+  meta_json    json
+  occurred_at  datetime
+}
