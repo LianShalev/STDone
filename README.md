@@ -65,3 +65,10 @@ Templates define the columns in your test table (for example: Title, Preconditio
 * Admin can block users and see usage analytics. Marketing requires explicit consent (opt‑in) and respects suppression lists.
 
 
+## Database ERD
+
+<p align="center">
+  <img src="docs/erd.svg" alt="STDone ERD" width="1200">
+</p>
+
+Source (DBML): [docs/erd.dbml](docs/erd.dbml) · MySQL DDL: [docs/schema.mysql.sql](docs/schema.mysql.sql)
