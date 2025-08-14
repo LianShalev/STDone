@@ -64,6 +64,7 @@ Templates define the columns in your test table (for example: Title, Preconditio
 * Premium: unlimited history and folders.
 * Admin can block users and see usage analytics. Marketing requires explicit consent (opt‑in) and respects suppression lists.
 
+---
 
 ## Database ERD
 
